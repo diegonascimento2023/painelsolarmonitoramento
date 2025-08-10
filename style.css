@@ -1,0 +1,117 @@
+/* ===== Base ===== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background: linear-gradient(135deg, #e0f2f1, #f4f7f6);
+  color: #333;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ===== Header ===== */
+header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding-bottom: 10px;
+  border-bottom: 3px solid #004d40;
+}
+
+header h1 {
+  font-weight: 800;
+  font-size: 2.5rem;
+  color: #00695c;
+  letter-spacing: 1.2px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* ===== Filtro ===== */
+#filterDate {
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1.5px solid #00695c;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+  width: 180px;
+}
+
+#filterDate:focus {
+  outline: none;
+  border-color: #004d40;
+  box-shadow: 0 0 5px #004d40;
+}
+
+#btnClearFilter {
+  margin-left: 12px;
+  padding: 7px 16px;
+  background-color: #00695c;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#btnClearFilter:hover {
+  background-color: #004d40;
+}
+
+/* ===== Container e gráficos ===== */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 25px 35px;
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.chart-wrapper {
+  margin-bottom: 50px;
+  background: #e8f5e9;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: inset 0 0 10px rgba(56, 142, 60, 0.2);
+  transition: box-shadow 0.3s ease;
+}
+
+.chart-wrapper:hover {
+  box-shadow: inset 0 0 15px rgba(56, 142, 60, 0.4);
+}
+
+canvas {
+  width: 100% !important;
+  height: 350px !important;
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.07);
+}
+
+/* ===== Footer ===== */
+footer {
+  margin-top: auto;
+  text-align: center;
+  padding: 18px 10px;
+  font-size: 0.95rem;
+  color: #555;
+  letter-spacing: 0.5px;
+  font-style: italic;
+  user-select: none;
+}
+
+/* ===== Titulos dos gráficos ===== */
+h2 {
+  margin-bottom: 18px;
+  color: #004d40;
+  border-bottom: 3px solid #004d40;
+  padding-bottom: 6px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Monitoramento Temperatura Painéis Solares</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Monitoramento de Temperatura dos Painéis Solares</h1>
+  </header>
+
+  <div style="text-align:center; margin-bottom: 20px;">
+    <label for="filterDate">Filtrar por data: </label>
+    <input type="date" id="filterDate" />
+    <button id="btnClearFilter">Limpar filtro</button>
+  </div>
+
+  <div class="container">
+    <section class="chart-wrapper">
+      <h2>Painel Brita</h2>
+      <canvas id="chartBrita"></canvas>
+    </section>
+
+    <section class="chart-wrapper">
+      <h2>Painel Vegetação</h2>
+      <canvas id="chartVegetacao"></canvas>
+    </section>
+  </div>
+
+  <footer>
+    &copy; 2025 Diego Nascimento - Projeto Monitoramento Solar
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
