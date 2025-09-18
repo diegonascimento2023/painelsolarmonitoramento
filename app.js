@@ -24,6 +24,39 @@ const dataVegetacao = [];
 // Guarda todos os dados recebidos para filtrar depois
 let allDados = [];
 
+// Adiciona spinner de carregamento
+const spinner = document.createElement('div');
+spinner.id = 'spinner';
+spinner.style = `
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center;
+  z-index: 9999; font-size: 2rem; color: #00695c; font-weight: bold;
+`;
+spinner.innerHTML = 'Carregando...';
+document.body.appendChild(spinner);
+spinner.style.display = 'none';
+
+// Adiciona mensagem de dados ausentes
+const msgSemDados = document.createElement('div');
+msgSemDados.id = 'msgSemDados';
+msgSemDados.style = `
+  text-align: center; color: #c62828; font-size: 1.2rem; margin: 20px 0; display: none;
+`;
+msgSemDados.innerText = 'Nenhum dado encontrado para esta data.';
+document.querySelector('.container').prepend(msgSemDados);
+
+// Adiciona botão de exportação CSV
+const btnExportCSV = document.createElement('button');
+btnExportCSV.id = 'btnExportCSV';
+btnExportCSV.innerText = 'Exportar CSV';
+btnExportCSV.style = `
+  margin-left: 12px; padding: 7px 16px; background-color: #388e3c; border: none;
+  border-radius: 6px; color: white; font-weight: 600; cursor: pointer; transition: background-color 0.3s ease;
+`;
+btnExportCSV.onmouseover = () => btnExportCSV.style.backgroundColor = '#00695c';
+btnExportCSV.onmouseout = () => btnExportCSV.style.backgroundColor = '#388e3c';
+document.getElementById('btnClearFilter').after(btnExportCSV);
+
 // Função para extrair só horário (HH:mm:ss) do timestamp
 function getTimeOnly(timestamp) {
   return timestamp.split(" ")[1];
@@ -37,12 +70,11 @@ function formatDateISO(timestamp) {
 // Função para calcular limites Y (ignorando null)
 function getYScaleLimits(dataArray) {
   const valoresValidos = dataArray.filter(v => v !== null);
-  if (!valoresValidos.length) return {min: 0, max: 50};
+  if (!valoresValidos.length) return {min: -10, max: 50}; // padrão se não houver dados
   let min = Math.min(...valoresValidos);
   let max = Math.max(...valoresValidos);
   min = Math.floor(min - 2);
   max = Math.ceil(max + 2);
-  if (min < 0) min = 0;
   return {min, max};
 }
 
@@ -74,6 +106,13 @@ function atualizarGraficos(dadosFiltrados) {
 
   chartBrita.update();
   chartVegetacao.update();
+
+  // Exibe ou oculta mensagem de dados ausentes
+  if (dadosFiltrados.length === 0) {
+    msgSemDados.style.display = 'block';
+  } else {
+    msgSemDados.style.display = 'none';
+  }
 }
 
 // Configura gráficos (tooltip customizado e label X inclinado)
@@ -101,8 +140,9 @@ const chartBrita = new Chart(ctxBrita, {
         callbacks: {
           label: context => {
             const val = context.parsed.y;
+            const hora = context.label;
             if (val === null) return 'Erro na leitura';
-            return `Temperatura: ${val} °C`;
+            return `Painel Brita | Horário: ${hora} | Temperatura: ${val} °C`;
           }
         }
       }
@@ -118,9 +158,7 @@ const chartBrita = new Chart(ctxBrita, {
         }
       },
       y: {
-        title: { display: true, text: 'Temperatura (°C)' },
-        min: 0,
-        max: 50
+        title: { display: true, text: 'Temperatura (°C)' }
       }
     }
   }
@@ -150,8 +188,9 @@ const chartVegetacao = new Chart(ctxVegetacao, {
         callbacks: {
           label: context => {
             const val = context.parsed.y;
+            const hora = context.label;
             if (val === null) return 'Erro na leitura';
-            return `Temperatura: ${val} °C`;
+            return `Painel Vegetação | Horário: ${hora} | Temperatura: ${val} °C`;
           }
         }
       }
@@ -167,9 +206,7 @@ const chartVegetacao = new Chart(ctxVegetacao, {
         }
       },
       y: {
-        title: { display: true, text: 'Temperatura (°C)' },
-        min: 0,
-        max: 50
+        title: { display: true, text: 'Temperatura (°C)' }
       }
     }
   }
@@ -181,20 +218,25 @@ const btnClearFilter = document.getElementById('btnClearFilter');
 
 // Ao carregar dados do Firebase
 refTemperaturas.on('value', (snapshot) => {
-  const dados = snapshot.val();
-  if (!dados) return;
-
-  const chaves = Object.keys(dados).sort();
-  allDados = chaves.map(chave => dados[chave]);
-
-  // Se filtro vazio, seta para data atual
-  if (!inputDate.value) {
-    const hoje = new Date();
-    const isoHoje = hoje.toISOString().split('T')[0];
-    inputDate.value = isoHoje;
-  }
-
-  filtrarEAtualizar();
+  spinner.style.display = 'flex'; // mostra spinner
+  setTimeout(() => { // simula carregamento
+    const dados = snapshot.val();
+    spinner.style.display = 'none'; // esconde spinner
+    if (!dados) {
+      allDados = [];
+      filtrarEAtualizar();
+      return;
+    }
+    const chaves = Object.keys(dados).sort();
+    allDados = chaves.map(chave => dados[chave]);
+    // Se filtro vazio, seta para data atual
+    if (!inputDate.value) {
+      const hoje = new Date();
+      const isoHoje = hoje.toISOString().split('T')[0];
+      inputDate.value = isoHoje;
+    }
+    filtrarEAtualizar();
+  }, 500); // tempo do spinner
 });
 
 // Função filtrar por data selecionada
@@ -214,4 +256,46 @@ inputDate.addEventListener('change', filtrarEAtualizar);
 btnClearFilter.addEventListener('click', () => {
   inputDate.value = "";
   atualizarGraficos(allDados);
+});
+
+// Exporta dados filtrados para CSV
+btnExportCSV.addEventListener('click', () => {
+  const dataSelecionada = inputDate.value;
+  const dadosFiltrados = dataSelecionada
+    ? allDados.filter(leitura => formatDateISO(leitura.timestamp) === dataSelecionada)
+    : allDados;
+  if (!dadosFiltrados.length) {
+    alert('Nenhum dado para exportar!');
+    return;
+  }
+  let csv = 'timestamp;temperaturaBrita;temperaturaVegetacao\n';
+  function limparCampo(valor) {
+    if (valor === null || valor === undefined) return '';
+    // Se for número, troca ponto por vírgula
+    if (!isNaN(valor) && typeof valor !== 'boolean' && valor !== '') {
+      return String(valor).replace('.', ',');
+    }
+    return String(valor).replace(/"/g, '""').replace(/[\r\n]+/g, ' ');
+  }
+  dadosFiltrados.forEach(leitura => {
+    csv += `"${limparCampo(leitura.timestamp)}";"${limparCampo(leitura.temperaturaBrita)}";"${limparCampo(leitura.temperaturaVegetacao)}"\n`;
+  });
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `dados_painel_${dataSelecionada || 'todos'}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+// Alternar modo escuro
+const btnDarkMode = document.getElementById('btnDarkMode');
+btnDarkMode.addEventListener('click', () => {
+  document.body.classList.toggle('dark-mode');
+  btnDarkMode.innerHTML = document.body.classList.contains('dark-mode')
+    ? '☀️ Alternar modo claro'
+    : '🌙 Alternar modo escuro';
 });
