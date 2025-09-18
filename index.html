@@ -6,6 +6,7 @@
   <title>Monitoramento Temperatura Painéis Solares</title>
 
   <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="favicon.png" type="image/png">
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -20,6 +21,11 @@
   </header>
 
   <div style="text-align:center; margin-bottom: 20px;">
+    <!-- Botão modo escuro -->
+    <button id="btnDarkMode" style="margin-bottom:10px; padding:7px 16px; background:#263238; color:#fff; border:none; border-radius:6px; cursor:pointer;">
+      🌙 Alternar modo escuro
+    </button>
+    <br>
     <label for="filterDate">Filtrar por data: </label>
     <input type="date" id="filterDate" />
     <button id="btnClearFilter">Limpar filtro</button>
