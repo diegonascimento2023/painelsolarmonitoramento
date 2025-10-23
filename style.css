@@ -291,3 +291,62 @@ body.dark-mode footer {
   outline: 2px solid #ff8a65;
   outline-offset: 2px;
 }
+
+/* ===== Ajustes para múltiplas curvas nos gráficos ===== */
+.chart-wrapper canvas {
+  height: 400px !important;
+}
+
+/* Ajuste das legendas */
+.chart-wrapper .chartjs-render-monitor {
+  margin-top: 10px;
+}
+
+.chart-wrapper h2 {
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+/* Legendas do Chart.js */
+.chartjs-legend {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.chartjs-legend li {
+  display: inline-block;
+  margin: 0 10px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+/* Modo escuro — melhor contraste nas linhas */
+body.dark-mode .chart-wrapper {
+  background: #2e3b40;
+}
+
+body.dark-mode canvas {
+  background: #263238;
+}
+
+body.dark-mode .chartjs-legend li {
+  color: #e0f2f1;
+}
+
+/* Legendas com melhor espaçamento */
+.chartjs-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 500;
+}
+
+/* Fundo dos gráficos levemente esverdeado */
+.chart-wrapper {
+  background: #f1f8e9;
+}
+body.dark-mode .chart-wrapper {
+  background: #37474f;
+}
+
