@@ -1,6 +1,6 @@
-// Configurações do Firebase
+// =================== CONFIGURAÇÕES FIREBASE ===================
 const firebaseConfig = {
-  apiKey: "AIzaSyDxS0oMUypuQbsPVrkuKR1Xv9Q-5UVFP0",
+  apiKey: "AIzaSyDxS0oMUypuQbsPVrkuKR1Xv9zQ-5UVFP0",
   authDomain: "painelsolarmonitoramento-73d6e.firebaseapp.com",
   databaseURL: "https://painelsolarmonitoramento-73d6e-default-rtdb.firebaseio.com/",
   projectId: "painelsolarmonitoramento-73d6e",
@@ -9,293 +9,302 @@ const firebaseConfig = {
   appId: "xxxxxx"
 };
 
-// Inicializa Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-// Referência para o nó de temperaturas
-const refTemperaturas = database.ref('painelSolar/temperaturas');
+// =================== REFERÊNCIA AOS DADOS ===================
+const refDados = database.ref("painelSolar/dados");
 
-// Arrays para gráficos
-const labels = []; // vai armazenar os horários
-const dataBrita = [];
-const dataVegetacao = [];
-
-// Guarda todos os dados recebidos para filtrar depois
+// =================== ESTRUTURAS DE DADOS ===================
+const labels = [];
+const dataBrita = { temp: [], v: [], i: [], p: [] };
+const dataVegetacao = { temp: [], v: [], i: [], p: [] };
 let allDados = [];
 
-// Adiciona spinner de carregamento
-const spinner = document.createElement('div');
-spinner.id = 'spinner';
+// =================== ELEMENTOS ===================
+const inputDate = document.getElementById("filterDate");
+const btnClearFilter = document.getElementById("btnClearFilter");
+
+// =================== SPINNER ===================
+const spinner = document.createElement("div");
+spinner.id = "spinner";
 spinner.style = `
   position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
   background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center;
   z-index: 9999; font-size: 2rem; color: #00695c; font-weight: bold;
 `;
-spinner.innerHTML = 'Carregando...';
+spinner.innerHTML = "Carregando...";
 document.body.appendChild(spinner);
-spinner.style.display = 'none';
+spinner.style.display = "none";
 
-// Adiciona mensagem de dados ausentes
-const msgSemDados = document.createElement('div');
-msgSemDados.id = 'msgSemDados';
+// =================== MENSAGEM SEM DADOS ===================
+const msgSemDados = document.createElement("div");
+msgSemDados.id = "msgSemDados";
 msgSemDados.style = `
   text-align: center; color: #c62828; font-size: 1.2rem; margin: 20px 0; display: none;
 `;
-msgSemDados.innerText = 'Nenhum dado encontrado para esta data.';
-document.querySelector('.container').prepend(msgSemDados);
+msgSemDados.innerText = "Nenhum dado encontrado para esta data.";
+document.querySelector(".container").prepend(msgSemDados);
 
-// Adiciona botão de exportação CSV
-const btnExportCSV = document.createElement('button');
-btnExportCSV.id = 'btnExportCSV';
-btnExportCSV.innerText = 'Exportar CSV';
+// =================== BOTÃO EXPORTAR CSV ===================
+const btnExportCSV = document.createElement("button");
+btnExportCSV.id = "btnExportCSV";
+btnExportCSV.innerText = "Exportar CSV";
 btnExportCSV.style = `
   margin-left: 12px; padding: 7px 16px; background-color: #388e3c; border: none;
   border-radius: 6px; color: white; font-weight: 600; cursor: pointer; transition: background-color 0.3s ease;
 `;
-btnExportCSV.onmouseover = () => btnExportCSV.style.backgroundColor = '#00695c';
-btnExportCSV.onmouseout = () => btnExportCSV.style.backgroundColor = '#388e3c';
-document.getElementById('btnClearFilter').after(btnExportCSV);
+btnExportCSV.onmouseover = () => (btnExportCSV.style.backgroundColor = "#00695c");
+btnExportCSV.onmouseout = () => (btnExportCSV.style.backgroundColor = "#388e3c");
+btnClearFilter.after(btnExportCSV);
 
-// Função para extrair só horário (HH:mm:ss) do timestamp
+// =================== FUNÇÕES AUXILIARES ===================
 function getTimeOnly(timestamp) {
   return timestamp.split(" ")[1];
 }
 
-// Função para formatar data do timestamp para YYYY-MM-DD
 function formatDateISO(timestamp) {
   return timestamp.split(" ")[0];
 }
 
-// Função para calcular limites Y (ignorando null)
-function getYScaleLimits(dataArray) {
-  const valoresValidos = dataArray.filter(v => v !== null);
-  if (!valoresValidos.length) return {min: -10, max: 50}; // padrão se não houver dados
-  let min = Math.min(...valoresValidos);
-  let max = Math.max(...valoresValidos);
-  min = Math.floor(min - 2);
-  max = Math.ceil(max + 2);
-  return {min, max};
-}
-
-// Atualiza os gráficos com dados filtrados (apenas horário no eixo X)
+// =================== ATUALIZAÇÃO DE GRÁFICOS ===================
 function atualizarGraficos(dadosFiltrados) {
   labels.length = 0;
-  dataBrita.length = 0;
-  dataVegetacao.length = 0;
+  for (let k in dataBrita) dataBrita[k].length = 0;
+  for (let k in dataVegetacao) dataVegetacao[k].length = 0;
 
-  dadosFiltrados.forEach(leitura => {
-    labels.push(getTimeOnly(leitura.timestamp)); // só horário no eixo X
-    dataBrita.push(leitura.temperaturaBrita === "erro" ? null : leitura.temperaturaBrita);
-    dataVegetacao.push(leitura.temperaturaVegetacao === "erro" ? null : leitura.temperaturaVegetacao);
+  dadosFiltrados.forEach((d) => {
+    labels.push(getTimeOnly(d.timestamp));
+    dataBrita.temp.push(d.painelBrita.temperatura ?? null);
+    dataBrita.v.push(d.painelBrita.tensao ?? null);
+    dataBrita.i.push(d.painelBrita.corrente ?? null);
+    dataBrita.p.push(d.painelBrita.potencia ?? null);
+
+    dataVegetacao.temp.push(d.painelVegetacao.temperatura ?? null);
+    dataVegetacao.v.push(d.painelVegetacao.tensao ?? null);
+    dataVegetacao.i.push(d.painelVegetacao.corrente ?? null);
+    dataVegetacao.p.push(d.painelVegetacao.potencia ?? null);
   });
-
-  if (labels.length > 48) {
-    labels.splice(0, labels.length - 48);
-    dataBrita.splice(0, dataBrita.length - 48);
-    dataVegetacao.splice(0, dataVegetacao.length - 48);
-  }
-
-  const yBrita = getYScaleLimits(dataBrita);
-  chartBrita.options.scales.y.min = yBrita.min;
-  chartBrita.options.scales.y.max = yBrita.max;
-
-  const yVeg = getYScaleLimits(dataVegetacao);
-  chartVegetacao.options.scales.y.min = yVeg.min;
-  chartVegetacao.options.scales.y.max = yVeg.max;
 
   chartBrita.update();
   chartVegetacao.update();
 
-  // Exibe ou oculta mensagem de dados ausentes
-  if (dadosFiltrados.length === 0) {
-    msgSemDados.style.display = 'block';
-  } else {
-    msgSemDados.style.display = 'none';
-  }
+  msgSemDados.style.display = dadosFiltrados.length === 0 ? "block" : "none";
 }
 
-// Configura gráficos (tooltip customizado e label X inclinado)
-const ctxBrita = document.getElementById('chartBrita').getContext('2d');
+// =================== CONFIGURAÇÃO DAS CORES ===================
+const colors = {
+  brita: {
+    temperatura: "#FF7043", // Laranja suave
+    tensao: "#42A5F5", // Azul
+    corrente: "#AB47BC", // Roxo
+    potencia: "#66BB6A", // Verde
+  },
+  vegetacao: {
+    temperatura: "#FF7043",
+    tensao: "#29B6F6",
+    corrente: "#8E24AA",
+    potencia: "#43A047",
+  },
+};
+
+// =================== GRÁFICO — PAINEL BRITA ===================
+const ctxBrita = document.getElementById("chartBrita").getContext("2d");
 const chartBrita = new Chart(ctxBrita, {
-  type: 'line',
+  type: "line",
   data: {
     labels: labels,
-    datasets: [{
-      label: 'Temperatura (°C)',
-      data: dataBrita,
-      borderColor: '#00796b',
-      backgroundColor: 'rgba(0, 121, 107, 0.2)',
-      fill: true,
-      tension: 0.3,
-      pointRadius: 3,
-      spanGaps: false
-    }]
+    datasets: [
+      {
+        label: "Temperatura (°C)",
+        data: dataBrita.temp,
+        borderColor: colors.brita.temperatura,
+        backgroundColor: "rgba(255, 112, 67, 0.15)",
+        tension: 0.3,
+        pointRadius: 3,
+        fill: true,
+      },
+      {
+        label: "Tensão (V)",
+        data: dataBrita.v,
+        borderColor: colors.brita.tensao,
+        backgroundColor: "rgba(66, 165, 245, 0.15)",
+        tension: 0.3,
+        pointRadius: 3,
+        fill: true,
+      },
+      {
+        label: "Corrente (A)",
+        data: dataBrita.i,
+        borderColor: colors.brita.corrente,
+        backgroundColor: "rgba(171, 71, 188, 0.15)",
+        tension: 0.3,
+        pointRadius: 3,
+        fill: true,
+      },
+      {
+        label: "Potência (W)",
+        data: dataBrita.p,
+        borderColor: colors.brita.potencia,
+        backgroundColor: "rgba(102, 187, 106, 0.15)",
+        tension: 0.3,
+        pointRadius: 3,
+        fill: true,
+      },
+    ],
   },
   options: {
     responsive: true,
-    interaction: { mode: 'nearest', intersect: false },
+    interaction: { mode: "nearest", intersect: false },
     plugins: {
+      legend: { position: "top", labels: { usePointStyle: true, boxWidth: 10 } },
       tooltip: {
         callbacks: {
-          label: context => {
-            const val = context.parsed.y;
-            const hora = context.label;
-            if (val === null) return 'Erro na leitura';
-            return `Painel Brita | Horário: ${hora} | Temperatura: ${val} °C`;
-          }
-        }
-      }
+          label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y ?? "erro"}`,
+        },
+      },
     },
     scales: {
       x: {
-        title: { display: true, text: 'Horário' },
-        ticks: {
-          maxRotation: 45,
-          minRotation: 45,
-          autoSkip: true,
-          maxTicksLimit: 12,
-        }
+        title: { display: true, text: "Horário" },
+        ticks: { maxRotation: 45, minRotation: 45, autoSkip: true, maxTicksLimit: 12 },
       },
-      y: {
-        title: { display: true, text: 'Temperatura (°C)' }
-      }
-    }
-  }
+      y: { title: { display: true, text: "Valores" } },
+    },
+  },
 });
 
-const ctxVegetacao = document.getElementById('chartVegetacao').getContext('2d');
+// =================== GRÁFICO — PAINEL VEGETAÇÃO ===================
+const ctxVegetacao = document.getElementById("chartVegetacao").getContext("2d");
 const chartVegetacao = new Chart(ctxVegetacao, {
-  type: 'line',
+  type: "line",
   data: {
     labels: labels,
-    datasets: [{
-      label: 'Temperatura (°C)',
-      data: dataVegetacao,
-      borderColor: '#388e3c',
-      backgroundColor: 'rgba(56, 142, 60, 0.2)',
-      fill: true,
-      tension: 0.3,
-      pointRadius: 3,
-      spanGaps: false
-    }]
+    datasets: [
+      {
+        label: "Temperatura (°C)",
+        data: dataVegetacao.temp,
+        borderColor: colors.vegetacao.temperatura,
+        backgroundColor: "rgba(255, 112, 67, 0.15)",
+        tension: 0.3,
+        pointRadius: 3,
+        fill: true,
+      },
+      {
+        label: "Tensão (V)",
+        data: dataVegetacao.v,
+        borderColor: colors.vegetacao.tensao,
+        backgroundColor: "rgba(41, 182, 246, 0.15)",
+        tension: 0.3,
+        pointRadius: 3,
+        fill: true,
+      },
+      {
+        label: "Corrente (A)",
+        data: dataVegetacao.i,
+        borderColor: colors.vegetacao.corrente,
+        backgroundColor: "rgba(142, 36, 170, 0.15)",
+        tension: 0.3,
+        pointRadius: 3,
+        fill: true,
+      },
+      {
+        label: "Potência (W)",
+        data: dataVegetacao.p,
+        borderColor: colors.vegetacao.potencia,
+        backgroundColor: "rgba(67, 160, 71, 0.15)",
+        tension: 0.3,
+        pointRadius: 3,
+        fill: true,
+      },
+    ],
   },
   options: {
     responsive: true,
-    interaction: { mode: 'nearest', intersect: false },
+    interaction: { mode: "nearest", intersect: false },
     plugins: {
+      legend: { position: "top", labels: { usePointStyle: true, boxWidth: 10 } },
       tooltip: {
         callbacks: {
-          label: context => {
-            const val = context.parsed.y;
-            const hora = context.label;
-            if (val === null) return 'Erro na leitura';
-            return `Painel Vegetação | Horário: ${hora} | Temperatura: ${val} °C`;
-          }
-        }
-      }
+          label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y ?? "erro"}`,
+        },
+      },
     },
     scales: {
       x: {
-        title: { display: true, text: 'Horário' },
-        ticks: {
-          maxRotation: 45,
-          minRotation: 45,
-          autoSkip: true,
-          maxTicksLimit: 12,
-        }
+        title: { display: true, text: "Horário" },
+        ticks: { maxRotation: 45, minRotation: 45, autoSkip: true, maxTicksLimit: 12 },
       },
-      y: {
-        title: { display: true, text: 'Temperatura (°C)' }
-      }
-    }
-  }
+      y: { title: { display: true, text: "Valores" } },
+    },
+  },
 });
 
-// Variáveis filtro
-const inputDate = document.getElementById('filterDate');
-const btnClearFilter = document.getElementById('btnClearFilter');
-
-// Ao carregar dados do Firebase
-refTemperaturas.on('value', (snapshot) => {
-  spinner.style.display = 'flex'; // mostra spinner
-  setTimeout(() => { // simula carregamento
+// =================== LEITURA DO FIREBASE ===================
+refDados.on("value", (snapshot) => {
+  spinner.style.display = "flex";
+  setTimeout(() => {
     const dados = snapshot.val();
-    spinner.style.display = 'none'; // esconde spinner
+    spinner.style.display = "none";
     if (!dados) {
       allDados = [];
-      filtrarEAtualizar();
+      atualizarGraficos([]);
       return;
     }
+
     const chaves = Object.keys(dados).sort();
-    allDados = chaves.map(chave => dados[chave]);
-    // Se filtro vazio, seta para data atual
+    allDados = chaves.map((key) => dados[key]);
+
     if (!inputDate.value) {
       const hoje = new Date();
-      const isoHoje = hoje.toISOString().split('T')[0];
-      inputDate.value = isoHoje;
+      inputDate.value = hoje.toISOString().split("T")[0];
     }
+
     filtrarEAtualizar();
-  }, 500); // tempo do spinner
+  }, 400);
 });
 
-// Função filtrar por data selecionada
+// =================== FILTRAGEM ===================
 function filtrarEAtualizar() {
-  const dataSelecionada = inputDate.value;
-  if (!dataSelecionada) {
-    atualizarGraficos(allDados);
-    return;
-  }
-  const dadosFiltrados = allDados.filter(leitura => formatDateISO(leitura.timestamp) === dataSelecionada);
-  atualizarGraficos(dadosFiltrados);
+  const dataSel = inputDate.value;
+  if (!dataSel) return atualizarGraficos(allDados);
+  const filtrados = allDados.filter((d) => formatDateISO(d.timestamp) === dataSel);
+  atualizarGraficos(filtrados);
 }
 
-// Eventos filtro
-inputDate.addEventListener('change', filtrarEAtualizar);
-
-btnClearFilter.addEventListener('click', () => {
+inputDate.addEventListener("change", filtrarEAtualizar);
+btnClearFilter.addEventListener("click", () => {
   inputDate.value = "";
   atualizarGraficos(allDados);
 });
 
-// Exporta dados filtrados para CSV
-btnExportCSV.addEventListener('click', () => {
-  const dataSelecionada = inputDate.value;
-  const dadosFiltrados = dataSelecionada
-    ? allDados.filter(leitura => formatDateISO(leitura.timestamp) === dataSelecionada)
-    : allDados;
-  if (!dadosFiltrados.length) {
-    alert('Nenhum dado para exportar!');
-    return;
-  }
-  let csv = 'timestamp;temperaturaBrita;temperaturaVegetacao\n';
-  function limparCampo(valor) {
-    if (valor === null || valor === undefined) return '';
-    // Se for número, troca ponto por vírgula
-    if (!isNaN(valor) && typeof valor !== 'boolean' && valor !== '') {
-      return String(valor).replace('.', ',');
-    }
-    return String(valor).replace(/"/g, '""').replace(/[\r\n]+/g, ' ');
-  }
-  dadosFiltrados.forEach(leitura => {
-    csv += `"${limparCampo(leitura.timestamp)}";"${limparCampo(leitura.temperaturaBrita)}";"${limparCampo(leitura.temperaturaVegetacao)}"\n`;
+// =================== EXPORTAÇÃO CSV ===================
+btnExportCSV.addEventListener("click", () => {
+  const dataSel = inputDate.value;
+  const filtrados = dataSel ? allDados.filter((d) => formatDateISO(d.timestamp) === dataSel) : allDados;
+  if (!filtrados.length) return alert("Nenhum dado para exportar!");
+
+  let csv = "timestamp;tensao_brita;corrente_brita;potencia_brita;temperatura_brita;tensao_vegetacao;corrente_vegetacao;potencia_vegetacao;temperatura_vegetacao\n";
+  filtrados.forEach((d) => {
+    csv += `${d.timestamp};${d.painelBrita.tensao};${d.painelBrita.corrente};${d.painelBrita.potencia};${d.painelBrita.temperatura};${d.painelVegetacao.tensao};${d.painelVegetacao.corrente};${d.painelVegetacao.potencia};${d.painelVegetacao.temperatura}\n`;
   });
-  const blob = new Blob([csv], {type: 'text/csv'});
+
+  const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
-  a.download = `dados_painel_${dataSelecionada || 'todos'}.csv`;
+  a.download = `dados_${dataSel || "todos"}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 });
 
-// Alternar modo escuro
-const btnDarkMode = document.getElementById('btnDarkMode');
-btnDarkMode.addEventListener('click', () => {
-  document.body.classList.toggle('dark-mode');
-  btnDarkMode.innerHTML = document.body.classList.contains('dark-mode')
-    ? '☀️ Alternar modo claro'
-    : '🌙 Alternar modo escuro';
+// =================== MODO ESCURO ===================
+const btnDarkMode = document.getElementById("btnDarkMode");
+btnDarkMode.addEventListener("click", () => {
+  document.body.classList.toggle("dark-mode");
+  btnDarkMode.innerHTML = document.body.classList.contains("dark-mode")
+    ? "☀️ Alternar modo claro"
+    : "🌙 Alternar modo escuro";
 });
